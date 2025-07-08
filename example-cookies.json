@@ -1,0 +1,28 @@
+[
+  {
+    "domain": "cursor.com",
+    "expirationDate": 1783527133.591552,
+    "hostOnly": true,
+    "httpOnly": false,
+    "name": "NEXT_LOCALE",
+    "path": "/",
+    "sameSite": "lax",
+    "secure": true,
+    "session": false,
+    "storeId": "0",
+    "value": "en"
+  },
+  {
+    "domain": "cursor.com",
+    "expirationDate": 1757175171.060299,
+    "hostOnly": true,
+    "httpOnly": true,
+    "name": "WorkosCursorSessionToken",
+    "path": "/",
+    "sameSite": "lax",
+    "secure": true,
+    "session": false,
+    "storeId": "0",
+    "value": "YOUR_COOKIE_VALUE"
+  }
+]
