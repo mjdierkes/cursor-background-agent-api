@@ -5,6 +5,8 @@ export interface Composer {
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+  bcId?: string;
+  createdAtMs?: number;
 }
 
 export interface WebAccessResponse {
@@ -19,11 +21,52 @@ export interface UserSettings {
   [key: string]: boolean;
 }
 
-export interface CreateComposerRequest {
-  task_description: string;
-  task_title: string;
-  async?: boolean;
-  allowed_write_directories?: string[];
+
+
+// New types based on documentation
+export interface FileContext {
+  relative_workspace_path: string;
+  contents: string;
+}
+
+export interface ModelDetails {
+  model: string;
+}
+
+export interface DevcontainerStartingPoint {
+  url: string;
+}
+
+export interface BackgroundComposerRequest {
+  snapshot_name_or_id: string;
+  prompt: string;
+  rich_prompt: string;
+  files: FileContext[];
+  model_details: ModelDetails;
+  devcontainer_starting_point?: DevcontainerStartingPoint;
+}
+
+export interface BackgroundComposer {
+  bcId: string;
+  name: string;
+  status: string;
+  createdAtMs: number;
+  updatedAtMs: number;
+  source: string;
+  repoUrl?: string;
+}
+
+export interface BackgroundComposerResponse {
+  composer?: {
+    bcId: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    workspaceRootPath: string;
+    repoUrl: string;
+    source: string;
+  };
+  was_swapped_to_default?: boolean;
+  wasSwappedToDefault?: boolean;
 }
 
 export interface ApiResponse<T = any> {
@@ -41,4 +84,23 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+export interface CreateBackgroundComposerOptions {
+  repositoryUrl: string;
+  taskDescription: string;
+  branch?: string;
+  model?: string;
+}
+
+export interface CreateBackgroundComposerResponse {
+  composer?: {
+    bcId: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    workspaceRootPath: string;
+    repoUrl: string;
+    source: string;
+  };
+  wasSwappedToDefault?: boolean;
 } 

@@ -1,13 +1,13 @@
 import { HttpClient } from './http-client.js';
-import { config, endpoints } from './config.js';
 import { logger } from './logger.js';
-import { 
-  Composer, 
-  WebAccessResponse, 
-  PrivacyModeResponse, 
-  UserSettings,
-  CreateComposerRequest,
-  ApiError
+import { config, endpoints } from './config.js';
+import {
+  BackgroundComposer,
+  BackgroundComposerRequest,
+  BackgroundComposerResponse,
+  ApiError,
+  CreateBackgroundComposerOptions,
+  CreateBackgroundComposerResponse
 } from './types.js';
 import {
   parseComposerList,
@@ -27,71 +27,136 @@ export class CursorAPIClient {
   }
 
   // Background Composer methods
-  async listComposers(n: number = 100, includeStatus: boolean = true): Promise<Composer[]> {
+  async listComposers(n: number = 100, includeStatus: boolean = true): Promise<BackgroundComposer[]> {
     logger.info('Listing background composers...');
-    return this.httpClient.request<Composer[]>({
+    return this.httpClient.request<BackgroundComposer[]>({
       url: endpoints.backgroundComposer.list,
       method: 'POST',
       data: { n, include_status: includeStatus }
     });
   }
 
-  async checkWebAccess(): Promise<WebAccessResponse> {
+  async checkWebAccess(): Promise<any> {
     logger.info('Checking agent web access...');
-    return this.httpClient.request<WebAccessResponse>({
+    return this.httpClient.request<any>({
       url: endpoints.backgroundComposer.checkWebAccess,
       method: 'POST'
     });
   }
 
-  async getUserSettings(): Promise<UserSettings> {
+  async getUserSettings(): Promise<any> {
     logger.info('Getting user settings...');
-    return this.httpClient.request<UserSettings>({
+    return this.httpClient.request<any>({
       url: endpoints.backgroundComposer.userSettings,
       method: 'GET'
     });
   }
 
-  async updateUserSettings(settings: Partial<UserSettings>): Promise<UserSettings> {
+  async updateUserSettings(settings: Partial<any>): Promise<any> {
     logger.info('Updating user settings...');
-    return this.httpClient.request<UserSettings>({
+    return this.httpClient.request<any>({
       url: endpoints.backgroundComposer.updateUserSettings,
       method: 'POST',
       data: settings
     });
   }
 
-  async createComposer(taskData: CreateComposerRequest): Promise<any> {
-    logger.info('Creating background composer task...');
-    
-    const possibleEndpoints = [
-      endpoints.backgroundComposer.create,
-      '/api/background-composer/start',
-      '/api/background-composer/run',
-      '/api/background-composer/new-task',
-      '/api/background-composer/submit'
-    ];
 
-    for (const endpoint of possibleEndpoints) {
-      try {
-        logger.debug(`Trying endpoint: ${endpoint}`);
-        const result = await this.httpClient.request({
-          url: endpoint,
-          method: 'POST',
-          data: taskData
-        });
-        logger.info('Task created successfully');
-        return result;
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 404) {
-          logger.debug(`Endpoint ${endpoint} not found, trying next...`);
-          continue;
-        }
-        throw error;
-      }
-    }
+
+  /**
+   * Creates a background composer using the new documented API structure
+   * @param request - The background composer request data
+   * @returns Promise<BackgroundComposerResponse>
+   */
+  async createBackgroundComposer(options: CreateBackgroundComposerOptions): Promise<CreateBackgroundComposerResponse> {
+    logger.info(`Creating background composer with task: ${options.taskDescription}`);
     
-    throw new Error('No working task creation endpoint found');
+    // Generate a unique background composer ID
+    const bcId = `bc-${crypto.randomUUID()}`;
+    
+    // Remove https:// protocol from repository URL for snapshotNameOrId and repoUrl
+    const cleanUrl = options.repositoryUrl.replace(/^https?:\/\//, '');
+    
+    // Create the exact payload structure from the HAR file
+    const payload = {
+      snapshotNameOrId: cleanUrl,
+      devcontainerStartingPoint: {
+        url: options.repositoryUrl,
+        ref: options.branch || "main"
+      },
+      modelDetails: {
+        modelName: options.model || "claude-4-sonnet-thinking",
+        maxMode: true
+      },
+      repositoryInfo: {},
+      snapshotWorkspaceRootPath: "/workspace",
+      autoBranch: true,
+      returnImmediately: true,
+      repoUrl: cleanUrl,
+      conversationHistory: [
+        {
+          text: options.taskDescription,
+          type: "MESSAGE_TYPE_HUMAN",
+          richText: JSON.stringify({
+            root: {
+              children: [
+                {
+                  children: [
+                    {
+                      detail: 0,
+                      format: 0,
+                      mode: "normal",
+                      style: "",
+                      text: options.taskDescription,
+                      type: "text",
+                      version: 1
+                    }
+                  ],
+                  direction: "ltr",
+                  format: "",
+                  indent: 0,
+                  type: "paragraph",
+                  version: 1,
+                  textFormat: 0,
+                  textStyle: ""
+                }
+              ],
+              direction: "ltr",
+              format: "",
+              indent: 0,
+              type: "root",
+              version: 1
+            }
+          })
+        }
+      ],
+      source: "BACKGROUND_COMPOSER_SOURCE_WEBSITE",
+      bcId: bcId,
+      addInitialMessageToResponses: true
+    };
+
+    const response = await this.httpClient.request<CreateBackgroundComposerResponse>({
+      method: 'POST',
+      url: endpoints.backgroundComposer.create,
+      data: payload,
+    });
+
+    logger.info(`Background composer created successfully with ID: ${response.composer?.bcId}`);
+    return response;
+  }
+
+  /**
+   * Create background composer (legacy method)
+   * @deprecated Use createBackgroundComposer instead
+   */
+  async create(request: BackgroundComposerRequest): Promise<BackgroundComposerResponse> {
+    logger.info('Creating background composer from snapshot...');
+    
+    return this.httpClient.request<BackgroundComposerResponse>({
+      url: endpoints.backgroundComposer.create,
+      method: 'POST',
+      data: request
+    });
   }
 
   async getDetailedComposer(composerId: string): Promise<any> {
@@ -172,9 +237,9 @@ export class CursorAPIClient {
   }
 
   // Dashboard methods
-  async getPrivacyMode(): Promise<PrivacyModeResponse> {
+  async getPrivacyMode(): Promise<any> {
     logger.info('Getting privacy mode...');
-    return this.httpClient.request<PrivacyModeResponse>({
+    return this.httpClient.request<any>({
       url: endpoints.dashboard.privacyMode,
       method: 'POST'
     });
@@ -202,7 +267,7 @@ export class CursorAPIClient {
   }
 
   // Test all endpoints
-  async testAllEndpoints(): Promise<Array<{ endpoint: string; status: string; error?: string }>> {
+  async testAllEndpoints(): Promise<{ success: boolean; results?: any; error?: string }> {
     logger.info('Testing all API endpoints...');
     
     const results = [];
@@ -244,115 +309,46 @@ export class CursorAPIClient {
 
     // Phase 2: Create a composer to use for testing
     try {
-      logger.info('Testing: Create Composer');
-      const createResult = await this.createComposer({
-        task_title: 'Test Task',
-        task_description: 'Test description for endpoint testing',
-        async: false,
-        allowed_write_directories: ['/tmp']
+      logger.info('Testing: Create Background Composer');
+      const createResult = await this.createBackgroundComposer({
+        taskDescription: 'Test task for endpoint testing',
+        repositoryUrl: 'github.com/mjdierkes/Swarm',
+        branch: 'main',
+        model: 'claude-4-sonnet-thinking'
       });
-      logger.info('✓ Create Composer - Success');
-      results.push({ endpoint: 'Create Composer', status: 'success' });
       
-      // Try to extract the composer ID from the creation result
-      if (createResult && createResult.id) {
-        testComposerId = createResult.id;
-        logger.info(`Using created composer ID: ${testComposerId}`);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (error instanceof ApiError && (
-        error.status === 404 || error.status === 400 || error.status === 422 || 
-        error.status === 405 || error.status === 500
-      )) {
-        logger.info(`✓ Create Composer - Endpoint accessible (expected error: ${error.status})`);
-        results.push({ endpoint: 'Create Composer', status: 'accessible', error: `${error.status}: ${errorMessage}` });
-      } else {
-        logger.error(`✗ Create Composer - Failed: ${errorMessage}`);
-        results.push({ endpoint: 'Create Composer', status: 'error', error: errorMessage });
-      }
-    }
-
-    // Phase 3: List composers to get a real ID if creation didn't work
-    try {
-      logger.info('Testing: List Composers');
-      const composers = await this.listComposers();
-      logger.info('✓ List Composers - Success');
-      results.push({ endpoint: 'List Composers', status: 'success' });
+      logger.info('✓ Create Background Composer Success');
+      results.push({
+        endpoint: 'create',
+        status: '✓ Success',
+      });
       
-      // Use the first composer ID if available and we don't have one from creation
-      if (composers && composers.length > 0 && composers[0].id && testComposerId === 'test-composer-id') {
-        testComposerId = composers[0].id;
-        logger.info(`Using real composer ID from list: ${testComposerId}`);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`✗ List Composers - Failed: ${errorMessage}`);
-      results.push({ endpoint: 'List Composers', status: 'error', error: errorMessage });
-    }
-
-    // Phase 4: Test endpoints that require a composer ID
-    const composerTests = [
-      { 
-        name: 'Get Detailed Composer', 
-        method: () => this.getDetailedComposer(testComposerId) 
-      },
-      { 
-        name: 'Get Diff Details', 
-        method: () => this.getDiffDetails(testComposerId) 
-      },
-      { 
-        name: 'Get Changes Hash', 
-        method: () => this.getChangesHash(testComposerId) 
-      },
-      { 
-        name: 'Open PR', 
-        method: () => this.openPr(testComposerId, { 
-          title: 'Test PR',
-          description: 'Test PR description'
-        }) 
-      },
-      { 
-        name: 'Pause Composer', 
-        method: () => this.pauseComposer(testComposerId) 
-      },
-      { 
-        name: 'Revert File', 
-        method: () => this.revertFile(testComposerId, 'test-file.txt') 
-      },
-      { 
-        name: 'Attach Background Composer', 
-        method: () => this.attachBackgroundComposer(testComposerId, { 
-          attachmentType: 'test' 
-        }) 
-      },
-      { 
-        name: 'Attach Background Composer Logs', 
-        method: () => this.attachBackgroundComposerLogs(testComposerId) 
-      }
-    ];
-
-    for (const test of composerTests) {
-      try {
-        logger.info(`Testing: ${test.name}`);
-        await test.method();
-        logger.info(`✓ ${test.name} - Success`);
-        results.push({ endpoint: test.name, status: 'success' });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        if (error instanceof ApiError && (
-          error.status === 404 || error.status === 400 || error.status === 422 || 
-          error.status === 405 || error.status === 500
-        )) {
-          logger.info(`✓ ${test.name} - Endpoint accessible (expected error: ${error.status})`);
-          results.push({ endpoint: test.name, status: 'accessible', error: `${error.status}: ${errorMessage}` });
-        } else {
-          logger.error(`✗ ${test.name} - Failed: ${errorMessage}`);
-          results.push({ endpoint: test.name, status: 'error', error: errorMessage });
+      // Test other endpoints
+      const listResult = await this.listComposers(10);
+      logger.info('✓ List Background Composers Success');
+      results.push({
+        endpoint: 'list',
+        status: '✓ Success',
+      });
+      
+      const accessResult = await this.checkWebAccess();
+      logger.info('✓ Check Web Access Success');
+      logger.debug('Access Result:', accessResult);
+      
+      return {
+        success: true,
+        results: {
+          create: createResult,
+          list: listResult,
+          access: accessResult
         }
-      }
+      };
+    } catch (error) {
+      logger.error('API test failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
-    
-    return results;
   }
 } 

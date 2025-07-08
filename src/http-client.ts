@@ -9,19 +9,24 @@ export class HttpClient {
 
   constructor(sessionToken: string) {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Cookie': `NEXT_LOCALE=en; WorkosCursorSessionToken=${sessionToken}`,
-      'User-Agent': config.userAgent,
+      'Accept': '*/*',
+      'Accept-Encoding': 'gzip, deflate, br, zstd',
       'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
+      'Content-Type': 'application/json',
+      'Cookie': `NEXT_LOCALE=en; WorkosCursorSessionToken=${sessionToken}`,
+      'Origin': 'https://cursor.com',
+      'Priority': 'u=1, i',
+      'Referer': 'https://cursor.com/agents',
+      'Sec-Ch-Ua': '"Chromium";v="133", "Not(A:Brand";v="99"',
+      'Sec-Ch-Ua-Arch': '"arm"',
+      'Sec-Ch-Ua-Bitness': '"64"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"macOS"',
+      'Sec-Ch-Ua-Platform-Version': '"15.5.0"',
       'Sec-Fetch-Dest': 'empty',
       'Sec-Fetch-Mode': 'cors',
       'Sec-Fetch-Site': 'same-origin',
-      'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
-      'Sec-Ch-Ua-Mobile': '?0',
-      'Sec-Ch-Ua-Platform': '"macOS"'
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
     };
 
     this.axios = axios.create({
@@ -49,6 +54,14 @@ export class HttpClient {
     try {
       logger.debug(`Making request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`);
       
+      // Special debug logging for create endpoint
+      if (requestConfig.url?.includes('startBackgroundComposerFromSnapshot')) {
+        logger.debug(`Create endpoint debug - URL: ${config.baseUrl}${requestConfig.url}`);
+        logger.debug(`Create endpoint debug - Method: ${requestConfig.method}`);
+        logger.debug(`Create endpoint debug - Data: ${JSON.stringify(requestConfig.data, null, 2)}`);
+        logger.debug(`Create endpoint debug - Headers: ${JSON.stringify(requestConfig.headers, null, 2)}`);
+      }
+      
       // Ensure Content-Type is set for POST requests with data
       if (requestConfig.method === 'POST' && requestConfig.data) {
         requestConfig.headers = {
@@ -64,6 +77,13 @@ export class HttpClient {
       const axiosError = error as AxiosError;
       const status = axiosError.response?.status || 0;
       const message = `Request failed: ${axiosError.message}`;
+      
+      // Special debug logging for create endpoint errors
+      if (requestConfig.url?.includes('startBackgroundComposerFromSnapshot')) {
+        logger.error(`Create endpoint error - Status: ${status}`);
+        logger.error(`Create endpoint error - Response: ${JSON.stringify(axiosError.response?.data, null, 2)}`);
+        logger.error(`Create endpoint error - Full URL: ${config.baseUrl}${requestConfig.url}`);
+      }
       
       logger.error(message, { 
         status, 

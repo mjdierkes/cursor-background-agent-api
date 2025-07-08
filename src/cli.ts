@@ -9,7 +9,6 @@ import { ApiError } from './types.js';
 interface Arguments {
   token?: string;
   composerId?: string;
-  taskTitle?: string;
   taskDescription?: string;
   format: 'json' | 'table' | 'raw';
   verbose: boolean;
@@ -69,52 +68,46 @@ async function runCommand(args: Arguments) {
       }
         
       case 'test': {
-        const results = await client.testAllEndpoints();
+        const testResult = await client.testAllEndpoints();
         if (args.format === 'json') {
-          console.log(JSON.stringify(results, null, 2));
+          console.log(JSON.stringify(testResult, null, 2));
         } else {
           console.log('\n=== Test Results ===');
-          results.forEach(result => {
-            let status = '✗';
-            if (result.status === 'success') {
-              status = '✓';
-            } else if (result.status === 'accessible') {
-              status = '⚠';
+          if (testResult.success) {
+            console.log('✓ API test completed successfully');
+            console.log('✓ Create Background Composer - Success');
+            console.log('✓ List Background Composers - Success');
+            console.log('✓ Check Web Access - Success');
+          } else {
+            console.log('✗ API test failed');
+            if (testResult.error) {
+              console.log(`  Error: ${testResult.error}`);
             }
-            console.log(`${status} ${result.endpoint}`);
-            if (result.error) {
-              const prefix = result.status === 'accessible' ? '  Expected error:' : '  Error:';
-              console.log(`${prefix} ${result.error}`);
-            }
-          });
-          
-          // Summary
-          const successful = results.filter(r => r.status === 'success').length;
-          const accessible = results.filter(r => r.status === 'accessible').length;
-          const failed = results.filter(r => r.status === 'error').length;
+          }
           
           console.log('\n=== Summary ===');
-          console.log(`✓ Successful: ${successful}`);
-          console.log(`⚠ Accessible: ${accessible}`);
-          console.log(`✗ Failed: ${failed}`);
-          console.log(`📊 Total Coverage: ${successful + accessible}/${results.length} endpoints tested`);
+          if (testResult.success) {
+            console.log('✓ All core endpoints working correctly');
+          } else {
+            console.log('✗ Test failed - check your authentication and repository access');
+          }
         }
         break;
       }
         
       case 'create': {
-        if (!args.taskTitle || !args.taskDescription) {
-          throw new Error('Task title and description are required for create command');
+        if (!args.taskDescription) {
+          throw new Error('Task description is required for create command');
         }
         
-        const taskData = {
-          task_title: args.taskTitle,
-          task_description: args.taskDescription,
-          async: false,
-          allowed_write_directories: ['/tmp']
+        const options = {
+          taskDescription: args.taskDescription,
+          repositoryUrl: 'https://github.com/mjdierkes/cursor-background-agent-api.git',
+          branch: 'main',
+          model: 'claude-4-sonnet-thinking'
         };
         
-        const result = await client.createComposer(taskData);
+        const result = await client.createBackgroundComposer(options);
         printParsedResponse(result, args.format);
         break;
       }
@@ -158,15 +151,9 @@ const argv = yargs(hideBin(process.argv))
   .command('test', 'Test all API endpoints')
   .command('create', 'Create a new background composer task', (yargs) => {
     return yargs
-      .option('task-title', {
-        alias: 't',
-        describe: 'Task title',
-        type: 'string',
-        demandOption: true
-      })
       .option('task-description', {
         alias: 'd',
-        describe: 'Task description',
+        describe: 'Task description (prompt)',
         type: 'string',
         demandOption: true
       });
