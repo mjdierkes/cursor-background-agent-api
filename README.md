@@ -125,6 +125,49 @@ The MCP server provides:
 | `MAX_RETRIES` | Maximum retry attempts | `3` |
 | `LOG_LEVEL` | Logging level | `info` |
 
+## GitHub Workflow Integration
+
+Automatically trigger background agents for every new issue with the included GitHub Actions workflow.
+
+### Setup
+
+1. **Add the workflow file** (already included in this repository):
+   - `.github/workflows/issue-background-agent.yml`
+
+2. **Configure the Cursor session token secret**:
+   - Go to your repository's Settings > Secrets and variables > Actions
+   - Add a new repository secret named `CURSOR_SESSION_TOKEN`
+   - Set the value to your Cursor session token
+
+3. **Enable the workflow**:
+   - The workflow will automatically trigger when new issues are created
+   - It will analyze the issue and create a background composer task
+   - A comment will be posted on the issue confirming the agent was triggered
+
+### How it Works
+
+When a new issue is created, the workflow:
+1. Makes a direct API call to Cursor's background composer endpoint
+2. Passes the complete issue information (title, body, author, labels, URL)
+3. Posts a comment on the issue confirming the agent was triggered
+
+The background agent will receive:
+- Issue title and description
+- Author information
+- Labels
+- Repository context
+- Direct link to the issue
+
+Results will be available in the Cursor Background Composer interface.
+
+### Workflow Features
+
+- **Automatic Triggering** - Runs on every new issue
+- **Fast Execution** - Direct API call with no setup steps
+- **Rich Context** - Passes complete issue information to the agent
+- **User Feedback** - Comments on the issue to confirm activation
+- **Repository Aware** - Uses the current repository URL automatically
+
 ## Development
 
 ```bash

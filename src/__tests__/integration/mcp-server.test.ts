@@ -1,7 +1,29 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { startMcpServer } from '../../mcp/server.js';
+import { Server } from 'http';
 
 describe('MCP Server Integration Tests', () => {
   const baseUrl = 'http://localhost:3001';
+  let server: Server;
+
+  beforeAll(async () => {
+    // Start the MCP server before running tests
+    server = await startMcpServer(3001);
+    
+    // Wait a bit for the server to fully start
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  });
+
+  afterAll(async () => {
+    // Stop the MCP server after tests complete
+    if (server) {
+      await new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve();
+        });
+      });
+    }
+  });
 
   describe('Health Check', () => {
     test('should return healthy status', async () => {

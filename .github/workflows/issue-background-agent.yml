@@ -1,0 +1,54 @@
+name: Issue Background Agent
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  trigger-background-agent:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Create background composer task
+      env:
+        CURSOR_SESSION_TOKEN: ${{ secrets.CURSOR_SESSION_TOKEN }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+        ISSUE_BODY: ${{ github.event.issue.body }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        ISSUE_URL: ${{ github.event.issue.html_url }}
+        REPO_URL: ${{ github.event.repository.clone_url }}
+        ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
+      run: |
+        curl -X POST https://cursor.com/api/background-composer \
+          -H "Content-Type: application/json" \
+          -H "Cookie: WorkosCursorSessionToken=$CURSOR_SESSION_TOKEN" \
+          -d "$(cat <<EOF
+        {
+          "taskDescription": "Handle GitHub issue #$ISSUE_NUMBER: $ISSUE_TITLE\n\nIssue Details:\n- Title: $ISSUE_TITLE\n- Author: $ISSUE_AUTHOR\n- Labels: $ISSUE_LABELS\n- Body: $ISSUE_BODY\n- URL: $ISSUE_URL\n\nPlease analyze this issue and provide suggestions for implementation or resolution.",
+          "repositoryUrl": "$REPO_URL",
+          "branch": "main",
+          "model": "claude-4-sonnet-thinking"
+        }
+        EOF
+        )"
+        
+    - name: Comment on issue
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🤖 **Background Agent Triggered**
+            
+            A background agent has been started to analyze this issue and provide implementation suggestions.
+            
+            The agent will review:
+            - Issue description and requirements
+            - Repository codebase
+            - Potential implementation approaches
+            
+            Results will be available in the Cursor Background Composer interface.`
+          }) 
