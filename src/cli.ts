@@ -62,12 +62,6 @@ async function runCommand(args: Arguments) {
         break;
       }
         
-      case 'github': {
-        const github = await client.getGitHubInstallationsParsed();
-        printParsedResponse(github, args.format);
-        break;
-      }
-        
       case 'settings': {
         const settings = await client.getUserSettingsParsed();
         printParsedResponse(settings, args.format);
@@ -135,8 +129,8 @@ async function runCommand(args: Arguments) {
         break;
       }
         
-              default:
-          throw new Error(`Unknown command: ${command}`);
+      default:
+        throw new Error(`Unknown command: ${command}`);
     }
     
   } catch (error) {
@@ -160,7 +154,6 @@ const argv = yargs(hideBin(process.argv))
   .command('list', 'List background composers')
   .command('web-access', 'Check agent web access')
   .command('privacy', 'Get privacy mode settings')
-  .command('github', 'Get GitHub installations')
   .command('settings', 'Get user settings')
   .command('test', 'Test all API endpoints')
   .command('create', 'Create a new background composer task', (yargs) => {

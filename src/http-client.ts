@@ -8,24 +8,26 @@ export class HttpClient {
   private axios: AxiosInstance;
 
   constructor(sessionToken: string) {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Cookie': `NEXT_LOCALE=en; WorkosCursorSessionToken=${sessionToken}`,
+      'User-Agent': config.userAgent,
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"macOS"'
+    };
+
     this.axios = axios.create({
       baseURL: config.baseUrl,
       timeout: config.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Cookie': `NEXT_LOCALE=en; WorkosCursorSessionToken=${sessionToken}`,
-        'User-Agent': config.userAgent,
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"macOS"'
-      }
+      headers
     });
 
     // Configure retry logic
@@ -46,6 +48,15 @@ export class HttpClient {
   async request<T>(requestConfig: AxiosRequestConfig): Promise<T> {
     try {
       logger.debug(`Making request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`);
+      
+      // Ensure Content-Type is set for POST requests with data
+      if (requestConfig.method === 'POST' && requestConfig.data) {
+        requestConfig.headers = {
+          ...requestConfig.headers,
+          'Content-Type': 'application/json'
+        };
+      }
+      
       const response = await this.axios.request<T>(requestConfig);
       logger.debug(`Request successful: ${response.status}`);
       return response.data;

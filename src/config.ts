@@ -53,22 +53,17 @@ export const endpoints = {
     checkWebAccess: '/api/background-composer/check-agent-web-access',
     userSettings: '/api/background-composer/get-background-composer-user-settings',
     updateUserSettings: '/api/background-composer/update-background-composer-user-settings',
-    create: '/api/background-composer/create',
+    create: '/api/auth/startBackgroundComposerFromSnapshot',
     getDetailed: '/api/background-composer/get-detailed-composer',
     getDiffDetails: '/api/background-composer/get-diff-details',
     getChangesHash: '/api/background-composer/get-changes-hash',
     openPr: '/api/background-composer/open-pr',
     pause: '/api/background-composer/pause',
     revertFile: '/api/background-composer/revert-file',
-    mergePullRequest: '/api/background-composer/merge-pull-request',
-    getRepositoryBranches: '/api/background-composer/get-repository-branches',
     attachBackgroundComposer: '/api/background-composer/attach-background-composer',
-    attachBackgroundComposerLogs: '/api/background-composer/attach-background-composer-logs',
-    checkPullRequestMergeability: '/api/background-composer/check-pull-request-mergeability',
-    getPullRequestMergeStatus: '/api/background-composer/get-pull-request-merge-status'
+    attachBackgroundComposerLogs: '/api/background-composer/attach-background-composer-logs'
   },
   dashboard: {
-    privacyMode: '/api/dashboard/get-user-privacy-mode',
-    githubInstallations: '/api/dashboard/get-github-installations'
+    privacyMode: '/api/dashboard/get-user-privacy-mode'
   }
 } as const; 

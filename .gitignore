@@ -24,3 +24,5 @@ cookies.json
 # Test files
 *.test.js
 *.test.ts 
+
+network_requests.har

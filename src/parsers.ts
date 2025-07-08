@@ -2,8 +2,6 @@ import {
   Composer, 
   WebAccessResponse, 
   PrivacyModeResponse, 
-  GitHubInstallation, 
-  GitHubInstallationsResponse, 
   UserSettings 
 } from './types.js';
 
@@ -50,20 +48,6 @@ export function parsePrivacyMode(data: PrivacyModeResponse): ParsedResponse {
   return {
     summary: `Privacy mode: ${mode}`,
     details: []
-  };
-}
-
-export function parseGitHubInstallations(data: GitHubInstallation[] | GitHubInstallationsResponse): ParsedResponse {
-  const installations = Array.isArray(data) ? data : data.installations || [];
-  
-  return {
-    summary: `GitHub installations: ${installations.length} found`,
-    details: installations.map((installation, index) => {
-      const login = installation.account?.login || 'Unknown';
-      const type = installation.account?.type || 'Unknown';
-      const repos = installation.repositories_count ? `\n     Repositories: ${installation.repositories_count}` : '';
-      return `  ${index + 1}. ${login} (${type})${repos}`;
-    })
   };
 }
 

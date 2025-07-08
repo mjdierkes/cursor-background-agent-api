@@ -15,19 +15,6 @@ export interface PrivacyModeResponse {
   privacyMode: 'PRIVACY_MODE_NO_TRAINING' | 'PRIVACY_MODE_TRAINING' | 'PRIVACY_MODE_FULL_PRIVACY';
 }
 
-export interface GitHubInstallation {
-  id: number;
-  account: {
-    login: string;
-    type: 'User' | 'Organization';
-  };
-  repositories_count?: number;
-}
-
-export interface GitHubInstallationsResponse {
-  installations?: GitHubInstallation[];
-}
-
 export interface UserSettings {
   [key: string]: boolean;
 }

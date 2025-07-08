@@ -5,7 +5,6 @@ import {
   Composer, 
   WebAccessResponse, 
   PrivacyModeResponse, 
-  GitHubInstallationsResponse, 
   UserSettings,
   CreateComposerRequest,
   ApiError
@@ -14,7 +13,6 @@ import {
   parseComposerList,
   parseWebAccess,
   parsePrivacyMode,
-  parseGitHubInstallations,
   parseUserSettings,
   ParsedResponse
 } from './parsers.js';
@@ -29,11 +27,12 @@ export class CursorAPIClient {
   }
 
   // Background Composer methods
-  async listComposers(): Promise<Composer[]> {
+  async listComposers(n: number = 100, includeStatus: boolean = true): Promise<Composer[]> {
     logger.info('Listing background composers...');
     return this.httpClient.request<Composer[]>({
       url: endpoints.backgroundComposer.list,
-      method: 'POST'
+      method: 'POST',
+      data: { n, include_status: includeStatus }
     });
   }
 
@@ -100,7 +99,12 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.getDetailed,
       method: 'POST',
-      data: { composerId }
+      data: { 
+        bcId: composerId,
+        n: 1,
+        includeDiff: true,
+        includeTeamWide: true
+      }
     });
   }
 
@@ -109,7 +113,7 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.getDiffDetails,
       method: 'POST',
-      data: { composerId }
+      data: { bcId: composerId }
     });
   }
 
@@ -118,7 +122,7 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.getChangesHash,
       method: 'POST',
-      data: { composerId }
+      data: { bcId: composerId }
     });
   }
 
@@ -127,7 +131,7 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.openPr,
       method: 'POST',
-      data: { composerId, ...prData }
+      data: { bcId: composerId, ...prData }
     });
   }
 
@@ -136,7 +140,7 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.pause,
       method: 'POST',
-      data: { composerId }
+      data: { bcId: composerId }
     });
   }
 
@@ -145,34 +149,16 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.revertFile,
       method: 'POST',
-      data: { composerId, filePath }
+      data: { bcId: composerId, filePath }
     });
   }
 
-  async mergePullRequest(composerId: string, prId: string): Promise<any> {
-    logger.info('Merging pull request...');
-    return this.httpClient.request({
-      url: endpoints.backgroundComposer.mergePullRequest,
-      method: 'POST',
-      data: { composerId, prId }
-    });
-  }
-
-  async getRepositoryBranches(repositoryId: string): Promise<any> {
-    logger.info('Getting repository branches...');
-    return this.httpClient.request({
-      url: endpoints.backgroundComposer.getRepositoryBranches,
-      method: 'POST',
-      data: { repositoryId }
-    });
-  }
-
-  async attachBackgroundComposer(composerId: string, attachmentData: any): Promise<any> {
+  async attachBackgroundComposer(composerId: string, attachmentData?: any): Promise<any> {
     logger.info('Attaching background composer...');
     return this.httpClient.request({
       url: endpoints.backgroundComposer.attachBackgroundComposer,
       method: 'POST',
-      data: { composerId, ...attachmentData }
+      data: { bcId: composerId, ...attachmentData }
     });
   }
 
@@ -181,25 +167,7 @@ export class CursorAPIClient {
     return this.httpClient.request({
       url: endpoints.backgroundComposer.attachBackgroundComposerLogs,
       method: 'POST',
-      data: { composerId }
-    });
-  }
-
-  async checkPullRequestMergeability(prId: string): Promise<any> {
-    logger.info('Checking pull request mergeability...');
-    return this.httpClient.request({
-      url: endpoints.backgroundComposer.checkPullRequestMergeability,
-      method: 'POST',
-      data: { prId }
-    });
-  }
-
-  async getPullRequestMergeStatus(prId: string): Promise<any> {
-    logger.info('Getting pull request merge status...');
-    return this.httpClient.request({
-      url: endpoints.backgroundComposer.getPullRequestMergeStatus,
-      method: 'POST',
-      data: { prId }
+      data: { bcId: composerId }
     });
   }
 
@@ -208,14 +176,6 @@ export class CursorAPIClient {
     logger.info('Getting privacy mode...');
     return this.httpClient.request<PrivacyModeResponse>({
       url: endpoints.dashboard.privacyMode,
-      method: 'POST'
-    });
-  }
-
-  async getGitHubInstallations(): Promise<GitHubInstallationsResponse> {
-    logger.info('Getting GitHub installations...');
-    return this.httpClient.request<GitHubInstallationsResponse>({
-      url: endpoints.dashboard.githubInstallations,
       method: 'POST'
     });
   }
@@ -236,11 +196,6 @@ export class CursorAPIClient {
     return parsePrivacyMode(data);
   }
 
-  async getGitHubInstallationsParsed(): Promise<ParsedResponse> {
-    const data = await this.getGitHubInstallations();
-    return parseGitHubInstallations(data);
-  }
-
   async getUserSettingsParsed(): Promise<ParsedResponse> {
     const data = await this.getUserSettings();
     return parseUserSettings(data);
@@ -250,9 +205,11 @@ export class CursorAPIClient {
   async testAllEndpoints(): Promise<Array<{ endpoint: string; status: string; error?: string }>> {
     logger.info('Testing all API endpoints...');
     
-    const tests = [
-      // Background Composer endpoints
-      { name: 'List Composers', method: () => this.listComposers() },
+    const results = [];
+    let testComposerId = 'test-composer-id';
+    
+    // Phase 1: Test basic endpoints that don't require a composer ID
+    const basicTests: Array<{ name: string; method: () => Promise<any> }> = [
       { name: 'Check Web Access', method: () => this.checkWebAccess() },
       { name: 'Get User Settings', method: () => this.getUserSettings() },
       { 
@@ -261,77 +218,10 @@ export class CursorAPIClient {
           enableBackgroundComposer: true 
         }) 
       },
-      { 
-        name: 'Create Composer', 
-        method: () => this.createComposer({
-          task_title: 'Test Task',
-          task_description: 'Test description for endpoint testing',
-          async: false,
-          allowed_write_directories: ['/tmp']
-        }) 
-      },
-      { 
-        name: 'Get Detailed Composer', 
-        method: () => this.getDetailedComposer('test-composer-id') 
-      },
-      { 
-        name: 'Get Diff Details', 
-        method: () => this.getDiffDetails('test-composer-id') 
-      },
-      { 
-        name: 'Get Changes Hash', 
-        method: () => this.getChangesHash('test-composer-id') 
-      },
-      { 
-        name: 'Open PR', 
-        method: () => this.openPr('test-composer-id', { 
-          title: 'Test PR',
-          description: 'Test PR description'
-        }) 
-      },
-      { 
-        name: 'Pause Composer', 
-        method: () => this.pauseComposer('test-composer-id') 
-      },
-      { 
-        name: 'Revert File', 
-        method: () => this.revertFile('test-composer-id', 'test-file.txt') 
-      },
-      { 
-        name: 'Merge Pull Request', 
-        method: () => this.mergePullRequest('test-composer-id', 'test-pr-id') 
-      },
-      { 
-        name: 'Get Repository Branches', 
-        method: () => this.getRepositoryBranches('test-repo-id') 
-      },
-      { 
-        name: 'Attach Background Composer', 
-        method: () => this.attachBackgroundComposer('test-composer-id', { 
-          attachmentType: 'test' 
-        }) 
-      },
-      { 
-        name: 'Attach Background Composer Logs', 
-        method: () => this.attachBackgroundComposerLogs('test-composer-id') 
-      },
-      { 
-        name: 'Check Pull Request Mergeability', 
-        method: () => this.checkPullRequestMergeability('test-pr-id') 
-      },
-      { 
-        name: 'Get Pull Request Merge Status', 
-        method: () => this.getPullRequestMergeStatus('test-pr-id') 
-      },
-      
-      // Dashboard endpoints
-      { name: 'Get Privacy Mode', method: () => this.getPrivacyMode() },
-      { name: 'Get GitHub Installations', method: () => this.getGitHubInstallations() }
+      { name: 'Get Privacy Mode', method: () => this.getPrivacyMode() }
     ];
 
-    const results = [];
-    
-    for (const test of tests) {
+    for (const test of basicTests) {
       try {
         logger.info(`Testing: ${test.name}`);
         await test.method();
@@ -339,15 +229,120 @@ export class CursorAPIClient {
         results.push({ endpoint: test.name, status: 'success' });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
-        // Some endpoints are expected to fail with test data or require different auth/methods
-        // We still consider these as "tested" since the endpoint responded
         if (error instanceof ApiError && (
-          error.status === 404 || // Not found (expected with test IDs)
-          error.status === 400 || // Bad request (expected with test data)
-          error.status === 422 || // Validation error (expected with test data)
-          error.status === 405 || // Method not allowed (endpoint exists but wrong method)
-          error.status === 500    // Server error (endpoint exists but failed processing)
+          error.status === 404 || error.status === 400 || error.status === 422 || 
+          error.status === 405 || error.status === 500
+        )) {
+          logger.info(`✓ ${test.name} - Endpoint accessible (expected error: ${error.status})`);
+          results.push({ endpoint: test.name, status: 'accessible', error: `${error.status}: ${errorMessage}` });
+        } else {
+          logger.error(`✗ ${test.name} - Failed: ${errorMessage}`);
+          results.push({ endpoint: test.name, status: 'error', error: errorMessage });
+        }
+      }
+    }
+
+    // Phase 2: Create a composer to use for testing
+    try {
+      logger.info('Testing: Create Composer');
+      const createResult = await this.createComposer({
+        task_title: 'Test Task',
+        task_description: 'Test description for endpoint testing',
+        async: false,
+        allowed_write_directories: ['/tmp']
+      });
+      logger.info('✓ Create Composer - Success');
+      results.push({ endpoint: 'Create Composer', status: 'success' });
+      
+      // Try to extract the composer ID from the creation result
+      if (createResult && createResult.id) {
+        testComposerId = createResult.id;
+        logger.info(`Using created composer ID: ${testComposerId}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (error instanceof ApiError && (
+        error.status === 404 || error.status === 400 || error.status === 422 || 
+        error.status === 405 || error.status === 500
+      )) {
+        logger.info(`✓ Create Composer - Endpoint accessible (expected error: ${error.status})`);
+        results.push({ endpoint: 'Create Composer', status: 'accessible', error: `${error.status}: ${errorMessage}` });
+      } else {
+        logger.error(`✗ Create Composer - Failed: ${errorMessage}`);
+        results.push({ endpoint: 'Create Composer', status: 'error', error: errorMessage });
+      }
+    }
+
+    // Phase 3: List composers to get a real ID if creation didn't work
+    try {
+      logger.info('Testing: List Composers');
+      const composers = await this.listComposers();
+      logger.info('✓ List Composers - Success');
+      results.push({ endpoint: 'List Composers', status: 'success' });
+      
+      // Use the first composer ID if available and we don't have one from creation
+      if (composers && composers.length > 0 && composers[0].id && testComposerId === 'test-composer-id') {
+        testComposerId = composers[0].id;
+        logger.info(`Using real composer ID from list: ${testComposerId}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`✗ List Composers - Failed: ${errorMessage}`);
+      results.push({ endpoint: 'List Composers', status: 'error', error: errorMessage });
+    }
+
+    // Phase 4: Test endpoints that require a composer ID
+    const composerTests = [
+      { 
+        name: 'Get Detailed Composer', 
+        method: () => this.getDetailedComposer(testComposerId) 
+      },
+      { 
+        name: 'Get Diff Details', 
+        method: () => this.getDiffDetails(testComposerId) 
+      },
+      { 
+        name: 'Get Changes Hash', 
+        method: () => this.getChangesHash(testComposerId) 
+      },
+      { 
+        name: 'Open PR', 
+        method: () => this.openPr(testComposerId, { 
+          title: 'Test PR',
+          description: 'Test PR description'
+        }) 
+      },
+      { 
+        name: 'Pause Composer', 
+        method: () => this.pauseComposer(testComposerId) 
+      },
+      { 
+        name: 'Revert File', 
+        method: () => this.revertFile(testComposerId, 'test-file.txt') 
+      },
+      { 
+        name: 'Attach Background Composer', 
+        method: () => this.attachBackgroundComposer(testComposerId, { 
+          attachmentType: 'test' 
+        }) 
+      },
+      { 
+        name: 'Attach Background Composer Logs', 
+        method: () => this.attachBackgroundComposerLogs(testComposerId) 
+      }
+    ];
+
+    for (const test of composerTests) {
+      try {
+        logger.info(`Testing: ${test.name}`);
+        await test.method();
+        logger.info(`✓ ${test.name} - Success`);
+        results.push({ endpoint: test.name, status: 'success' });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (error instanceof ApiError && (
+          error.status === 404 || error.status === 400 || error.status === 422 || 
+          error.status === 405 || error.status === 500
         )) {
           logger.info(`✓ ${test.name} - Endpoint accessible (expected error: ${error.status})`);
           results.push({ endpoint: test.name, status: 'accessible', error: `${error.status}: ${errorMessage}` });
