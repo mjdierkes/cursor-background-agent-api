@@ -27,20 +27,22 @@ jobs:
     - name: Create background composer task
       run: |
         npm run start create \
-          --task-description "Handle GitHub issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
-
-        Issue Details:
-        - Title: ${{ github.event.issue.title }}
-        - Author: ${{ github.event.issue.user.login }}
-        - Labels: ${{ join(github.event.issue.labels.*.name, ', ') }}
-        - Body: ${{ github.event.issue.body }}
-        - URL: ${{ github.event.issue.html_url }}
-        
-        Please analyze this issue and provide suggestions for implementation or resolution." \
+          --task-description "$TASK_DESCRIPTION" \
           --repository-url "${{ github.event.repository.clone_url }}" \
           --format json
       env:
         CURSOR_SESSION_TOKEN: ${{ secrets.CURSOR_SESSION_TOKEN }}
+        TASK_DESCRIPTION: |
+          Handle GitHub issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+
+          Issue Details:
+          - Title: ${{ github.event.issue.title }}
+          - Author: ${{ github.event.issue.user.login }}
+          - Labels: ${{ join(github.event.issue.labels.*.name, ', ') }}
+          - Body: ${{ github.event.issue.body }}
+          - URL: ${{ github.event.issue.html_url }}
+          
+          Please analyze this issue and provide suggestions for implementation or resolution.
         
     - name: Comment on issue
       uses: actions/github-script@v7
