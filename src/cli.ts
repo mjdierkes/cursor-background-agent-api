@@ -5,6 +5,7 @@ import { hideBin } from 'yargs/helpers';
 import { CursorAPIClient } from './api-client.js';
 import { logger } from './logger.js';
 import { ApiError } from './types.js';
+import { startMcpServer } from './mcp-server.js';
 
 interface Arguments {
   token?: string;
@@ -12,6 +13,7 @@ interface Arguments {
   taskDescription?: string;
   format: 'json' | 'table' | 'raw';
   verbose: boolean;
+  port?: number;
   _: (string | number)[];
 }
 
@@ -122,6 +124,13 @@ async function runCommand(args: Arguments) {
         break;
       }
         
+      case 'mcp-server': {
+        const port = args.port || 3001;
+        logger.info(`Starting MCP server on port ${port}...`);
+        await startMcpServer(port);
+        break;
+      }
+        
       default:
         throw new Error(`Unknown command: ${command}`);
     }
@@ -165,6 +174,15 @@ const argv = yargs(hideBin(process.argv))
         describe: 'Composer ID',
         type: 'string',
         demandOption: true
+      });
+  })
+  .command('mcp-server', 'Start MCP server', (yargs) => {
+    return yargs
+      .option('port', {
+        alias: 'p',
+        describe: 'Port to run MCP server on',
+        type: 'number',
+        default: 3001
       });
   })
   .option('token', {
