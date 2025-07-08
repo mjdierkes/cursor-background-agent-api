@@ -12,12 +12,6 @@ export function buildComposerPayload(options: CreateBackgroundComposerOptions) {
   // Create a clean URL with protocol for devcontainerStartingPoint
   const devcontainerUrl = options.repositoryUrl.replace(/\.git$/, '');
   
-  // Debug logging
-  console.log(`DEBUG: Original URL: ${options.repositoryUrl}`);
-  console.log(`DEBUG: Clean URL: ${cleanUrl}`);
-  console.log(`DEBUG: Devcontainer URL: ${devcontainerUrl}`);
-  console.log(`DEBUG: URL has .git suffix: ${options.repositoryUrl.endsWith('.git')}`);
-  
   // Create the exact payload structure from the HAR file
   return {
     snapshotNameOrId: cleanUrl,
