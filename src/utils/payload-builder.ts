@@ -4,14 +4,25 @@ export function buildComposerPayload(options: CreateBackgroundComposerOptions) {
   // Generate a unique background composer ID
   const bcId = `bc-${crypto.randomUUID()}`;
   
-  // Remove https:// protocol from repository URL for snapshotNameOrId and repoUrl
-  const cleanUrl = options.repositoryUrl.replace(/^https?:\/\//, '');
+  // Remove https:// protocol and .git suffix from repository URL for snapshotNameOrId and repoUrl
+  const cleanUrl = options.repositoryUrl
+    .replace(/^https?:\/\//, '')
+    .replace(/\.git$/, '');
+  
+  // Create a clean URL with protocol for devcontainerStartingPoint
+  const devcontainerUrl = options.repositoryUrl.replace(/\.git$/, '');
+  
+  // Debug logging
+  console.log(`DEBUG: Original URL: ${options.repositoryUrl}`);
+  console.log(`DEBUG: Clean URL: ${cleanUrl}`);
+  console.log(`DEBUG: Devcontainer URL: ${devcontainerUrl}`);
+  console.log(`DEBUG: URL has .git suffix: ${options.repositoryUrl.endsWith('.git')}`);
   
   // Create the exact payload structure from the HAR file
   return {
     snapshotNameOrId: cleanUrl,
     devcontainerStartingPoint: {
-      url: options.repositoryUrl,
+      url: devcontainerUrl,
       ref: options.branch || "main"
     },
     modelDetails: {
