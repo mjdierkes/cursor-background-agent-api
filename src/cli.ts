@@ -81,12 +81,29 @@ async function runCommand(args: Arguments) {
         } else {
           console.log('\n=== Test Results ===');
           results.forEach(result => {
-            const status = result.status === 'success' ? '✓' : '✗';
+            let status = '✗';
+            if (result.status === 'success') {
+              status = '✓';
+            } else if (result.status === 'accessible') {
+              status = '⚠';
+            }
             console.log(`${status} ${result.endpoint}`);
             if (result.error) {
-              console.log(`  Error: ${result.error}`);
+              const prefix = result.status === 'accessible' ? '  Expected error:' : '  Error:';
+              console.log(`${prefix} ${result.error}`);
             }
           });
+          
+          // Summary
+          const successful = results.filter(r => r.status === 'success').length;
+          const accessible = results.filter(r => r.status === 'accessible').length;
+          const failed = results.filter(r => r.status === 'error').length;
+          
+          console.log('\n=== Summary ===');
+          console.log(`✓ Successful: ${successful}`);
+          console.log(`⚠ Accessible: ${accessible}`);
+          console.log(`✗ Failed: ${failed}`);
+          console.log(`📊 Total Coverage: ${successful + accessible}/${results.length} endpoints tested`);
         }
         break;
       }
