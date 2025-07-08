@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import { config } from './config.js';
-import { ApiError } from './types.js';
-import { logger } from './logger.js';
+import { ApiError } from './types/index.js';
+import { logger } from './utils/logger.js';
 
 export class HttpClient {
   private axios: AxiosInstance;
@@ -54,14 +54,6 @@ export class HttpClient {
     try {
       logger.debug(`Making request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`);
       
-      // Special debug logging for create endpoint
-      if (requestConfig.url?.includes('startBackgroundComposerFromSnapshot')) {
-        logger.debug(`Create endpoint debug - URL: ${config.baseUrl}${requestConfig.url}`);
-        logger.debug(`Create endpoint debug - Method: ${requestConfig.method}`);
-        logger.debug(`Create endpoint debug - Data: ${JSON.stringify(requestConfig.data, null, 2)}`);
-        logger.debug(`Create endpoint debug - Headers: ${JSON.stringify(requestConfig.headers, null, 2)}`);
-      }
-      
       // Ensure Content-Type is set for POST requests with data
       if (requestConfig.method === 'POST' && requestConfig.data) {
         requestConfig.headers = {
@@ -77,13 +69,6 @@ export class HttpClient {
       const axiosError = error as AxiosError;
       const status = axiosError.response?.status || 0;
       const message = `Request failed: ${axiosError.message}`;
-      
-      // Special debug logging for create endpoint errors
-      if (requestConfig.url?.includes('startBackgroundComposerFromSnapshot')) {
-        logger.error(`Create endpoint error - Status: ${status}`);
-        logger.error(`Create endpoint error - Response: ${JSON.stringify(axiosError.response?.data, null, 2)}`);
-        logger.error(`Create endpoint error - Full URL: ${config.baseUrl}${requestConfig.url}`);
-      }
       
       logger.error(message, { 
         status, 

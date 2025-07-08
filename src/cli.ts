@@ -2,19 +2,30 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { execSync } from 'child_process';
 import { CursorAPIClient } from './api-client.js';
-import { logger } from './logger.js';
-import { ApiError } from './types.js';
-import { startMcpServer } from './mcp-server.js';
+import { logger } from './utils/logger.js';
+import { ApiError } from './types/index.js';
+import { startMcpServer } from './mcp/server.js';
 
 interface Arguments {
   token?: string;
   composerId?: string;
   taskDescription?: string;
+  repositoryUrl?: string;
   format: 'json' | 'table' | 'raw';
   verbose: boolean;
   port?: number;
   _: (string | number)[];
+}
+
+function getRepositoryUrl(): string {
+  try {
+    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
+    return remoteUrl;
+  } catch (error) {
+    return 'https://github.com/mjdierkes/cursor-background-agent-api.git';
+  }
 }
 
 function printParsedResponse(response: any, format: string) {
@@ -102,9 +113,12 @@ async function runCommand(args: Arguments) {
           throw new Error('Task description is required for create command');
         }
         
+        const repositoryUrl = args.repositoryUrl || getRepositoryUrl();
+        logger.info(`Using repository URL: ${repositoryUrl}`);
+        
         const options = {
           taskDescription: args.taskDescription,
-          repositoryUrl: 'https://github.com/mjdierkes/cursor-background-agent-api.git',
+          repositoryUrl,
           branch: 'main',
           model: 'claude-4-sonnet-thinking'
         };
@@ -139,7 +153,7 @@ async function runCommand(args: Arguments) {
     if (error instanceof ApiError) {
       logger.error(`API Error (${error.status}): ${error.message}`);
       if (args.verbose && error.response) {
-        console.error('Response:', error.response);
+        console.error('Response:', JSON.stringify(error.response, null, 2));
       }
     } else if (error instanceof Error) {
       logger.error(`Error: ${error.message}`);
@@ -165,6 +179,11 @@ const argv = yargs(hideBin(process.argv))
         describe: 'Task description (prompt)',
         type: 'string',
         demandOption: true
+      })
+      .option('repository-url', {
+        alias: 'r',
+        describe: 'Repository URL (defaults to current git remote)',
+        type: 'string'
       });
   })
   .command('details', 'Get detailed composer information', (yargs) => {

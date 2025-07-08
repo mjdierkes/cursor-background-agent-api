@@ -2,13 +2,11 @@ import {
   Composer, 
   WebAccessResponse, 
   PrivacyModeResponse, 
-  UserSettings 
-} from './types.js';
+  UserSettings,
+  ParsedResponse 
+} from '../types/index.js';
 
-export interface ParsedResponse {
-  summary: string;
-  details: string[];
-}
+export type { ParsedResponse };
 
 export function parseComposerList(data: Composer[]): ParsedResponse {
   if (!Array.isArray(data)) {
@@ -38,7 +36,7 @@ export function parseWebAccess(data: WebAccessResponse): ParsedResponse {
 }
 
 export function parsePrivacyMode(data: PrivacyModeResponse): ParsedResponse {
-  const modes = {
+  const modes: Record<string, string> = {
     'PRIVACY_MODE_NO_TRAINING': 'Data not used for training',
     'PRIVACY_MODE_TRAINING': 'Data used for training',
     'PRIVACY_MODE_FULL_PRIVACY': 'Full privacy mode'

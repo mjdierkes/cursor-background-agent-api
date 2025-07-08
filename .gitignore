@@ -21,8 +21,4 @@ Thumbs.db
 # Session data (contains sensitive tokens)
 cookies.json
 
-# Test files
-*.test.js
-*.test.ts 
-
 network_requests.har

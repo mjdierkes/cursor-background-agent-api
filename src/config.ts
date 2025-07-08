@@ -1,19 +1,10 @@
 import { config as loadEnv } from 'dotenv';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { Config } from './types/config.js';
 
 // Load environment variables
 loadEnv();
-
-export interface Config {
-  baseUrl: string;
-  sessionToken: string;
-  userAgent: string;
-  timeout: number;
-  maxRetries: number;
-  retryDelay: number;
-  logLevel: string;
-}
 
 function getSessionToken(): string {
   // Try environment variable first
