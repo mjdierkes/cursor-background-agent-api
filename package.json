@@ -1,0 +1,35 @@
+{
+  "name": "cursor-api-client",
+  "version": "1.0.0",
+  "description": "Simple API client for Cursor Background Composer",
+  "main": "dist/cli.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "axios-retry": "^4.0.0",
+    "dotenv": "^16.3.0",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.0",
+    "yargs": "^17.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/yargs": "^17.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": ["cursor", "api", "background-composer"],
+  "author": "",
+  "license": "MIT"
+} 
