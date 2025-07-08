@@ -1,8 +1,9 @@
+import { randomUUID } from 'crypto';
 import { CreateBackgroundComposerOptions } from '../types/index.js';
 
 export function buildComposerPayload(options: CreateBackgroundComposerOptions) {
   // Generate a unique background composer ID
-  const bcId = `bc-${crypto.randomUUID()}`;
+  const bcId = `bc-${randomUUID()}`;
   
   // Remove https:// protocol and .git suffix from repository URL for snapshotNameOrId and repoUrl
   const cleanUrl = options.repositoryUrl
