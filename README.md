@@ -100,30 +100,6 @@ cursor-api settings      # Get user settings
 - `--token, -T` - Override session token
 - `--help, -h` - Show help
 
-## MCP Server
-
-Start the Model Context Protocol server for AI assistant integration:
-
-```bash
-cursor-api mcp-server
-cursor-api mcp-server --port 3001
-```
-
-The MCP server provides:
-- **Endpoint**: `http://localhost:3001/mcp`
-- **Health Check**: `http://localhost:3001/health`
-- **CORS Support** - Cross-origin requests enabled
-- **Session Management** - Stateless request handling
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CURSOR_SESSION_TOKEN` | Cursor session token | Required |
-| `CURSOR_BASE_URL` | Cursor API base URL | `https://cursor.com` |
-| `REQUEST_TIMEOUT` | Request timeout (ms) | `30000` |
-| `MAX_RETRIES` | Maximum retry attempts | `3` |
-| `LOG_LEVEL` | Logging level | `info` |
 
 ## GitHub Workflow Integration
 
@@ -212,7 +188,3 @@ const settings = await client.getUserSettings();
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-## Keywords
-
-`cursor`, `background-composer`, `api-client`, `cli`, `mcp-server`, `automation`, `typescript`, `nodejs`
