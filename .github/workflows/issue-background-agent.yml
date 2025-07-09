@@ -17,7 +17,7 @@ jobs:
       
     - name: Clone cursor-background-agent-api
       run: |
-        git clone https://github.com/YOUR_USERNAME/cursor-background-agent-api.git background-agent
+        git clone https://github.com/mjdierkes/cursor-background-agent-api.git background-agent
         cd background-agent
       
     - name: Setup Node.js
