@@ -47,6 +47,7 @@ jobs:
       env:
         CURSOR_SESSION_TOKEN: ${{ secrets.CURSOR_SESSION_TOKEN }}
         TASK_DESCRIPTION: >
+          ${{ github.event.issue.title }}
           ${{ github.event.issue.body }}
         
     - name: Comment on issue
