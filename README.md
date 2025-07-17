@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mjdierkes-cursor-background-agent-api-badge.png)](https://mseep.ai/app/mjdierkes-cursor-background-agent-api)
+
 # Cursor Background Agent API Client
 
 > **Powerful Node.js API client and CLI tool for Cursor Background Composer automation**
